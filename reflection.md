@@ -6,6 +6,13 @@
 
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
+- The user can (1) enter basic owner + pet info, 
+(2) add/edit pet care tasks with duration and priority, and 
+(3) generate a daily schedule/plan that fits within time constraints and shows an explanation for the chosen order.
+- `Owner` stores the owner profile, owner-level scheduling preferences, and the list of `Pet` objects that belong to the owner.
+- `Pet` stores pet identity (name/species), pet-level preferences, and the list of `Task` items that need to be scheduled.
+- `Task` represents one care activity (title, duration, priority) and provides priority scoring behavior (stubbed for now) that the scheduler can use.
+- `Scheduler` is responsible for taking the owner + day + constraints and producing an ordered daily plan (plus a human-readable explanation).
 
 **b. Design changes**
 
@@ -25,7 +32,8 @@
 
 - Describe one tradeoff your scheduler makes.
 - Why is that tradeoff reasonable for this scenario?
-
+- One tradeoff is that conflict detection only checks for exact same start times (for example, two tasks both at 08:00) instead of full duration overlap analysis.
+- This is reasonable for the current project scope because it keeps the algorithm simple and easy to explain, while still catching the most obvious scheduling issues for a busy pet owner.
 ---
 
 ## 3. AI Collaboration
