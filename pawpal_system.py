@@ -1,123 +1,107 @@
-"""
-PawPal+ backend logic layer (skeleton only).
+"""PawPal+ backend logic layer.
 
-This module defines the core objects you will use to implement the scheduling
-logic later and connect to the Streamlit UI in `app.py`.
+This module defines the core objects used by the app's scheduling logic.
+It is designed to be usable from both a CLI script (for early verification)
+and the Streamlit UI in `app.py`.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date
-from typing import Any, Dict, List, Optional
+from datetime import date, time
+from typing import Iterable, List, Optional
 
 
 @dataclass
 class Task:
-    """
-    A single care task (e.g., walk, feeding, meds) that should be scheduled.
-    """
+    """Represents a single care activity that can be scheduled."""
 
-    title: str
-    duration_minutes: int
-    priority: str  # expected: "low" | "medium" | "high"
+    description: str
+    at: time
+    frequency: str = "once"  # e.g., "once", "daily", "weekly"
+    completed: bool = False
 
-    # Optional metadata to support richer scheduling later.
-    task_type: Optional[str] = None
-    notes: Optional[str] = None
+    def mark_complete(self) -> None:
+        """Mark this task as completed."""
 
-    def priority_score(self) -> int:
-        """Convert priority into a numeric score for ordering.
-
-        Skeleton/stub: implement mapping + any owner preference adjustments.
-        """
-
-        raise NotImplementedError
+        self.completed = True
 
 
 @dataclass
 class Pet:
-    """
-    Represents one pet. Owns the tasks that must be scheduled.
-    """
+    """Stores pet details and a list of tasks."""
 
     pet_id: str
     name: str
     species: str
 
-    preferences: Dict[str, Any] = field(default_factory=dict)
     tasks: List[Task] = field(default_factory=list)
 
     def add_task(self, task: Task) -> None:
         """Add a new task to this pet."""
 
-        raise NotImplementedError
+        self.tasks.append(task)
 
-    def update_task(self, task_title: str, updates: Dict[str, Any]) -> None:
-        """Update an existing task by title (or other identifier)."""
+    def remove_task(self, task: Task) -> None:
+        """Remove a task from this pet."""
 
-        raise NotImplementedError
-
-    def remove_task(self, task_title: str) -> None:
-        """Remove an existing task."""
-
-        raise NotImplementedError
+        self.tasks.remove(task)
 
 
 @dataclass
 class Owner:
-    """
-    Represents the user/owner. Owns pets and may store preferences affecting
-    scheduling.
-    """
+    """Manages multiple pets and provides access to their tasks."""
 
     owner_name: str
     pets: List[Pet] = field(default_factory=list)
 
-    preferences: Dict[str, Any] = field(default_factory=dict)
-    daily_time_budget_minutes: int = 240
-
     def add_pet(self, pet: Pet) -> None:
         """Add a pet to this owner."""
 
-        raise NotImplementedError
+        self.pets.append(pet)
 
-    def update_preferences(self, updates: Dict[str, Any]) -> None:
-        """Update owner-level preferences that influence scheduling."""
+    def all_tasks(self) -> List[tuple[Pet, Task]]:
+        """Return all tasks across all pets as (pet, task) pairs."""
 
-        raise NotImplementedError
+        pairs: List[tuple[Pet, Task]] = []
+        for pet in self.pets:
+            for task in pet.tasks:
+                pairs.append((pet, task))
+        return pairs
 
 
 class Scheduler:
-    """
-    Scheduling engine: selects and orders tasks under constraints, and returns
-    a plan that can be displayed along with an explanation.
-    """
+    """The “brain” that retrieves, organizes, and manages tasks across pets."""
 
-    def generate_daily_plan(
-        self,
-        *,
-        owner: Owner,
-        day: date,
-        available_minutes: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
-        """
-        Generate a daily plan across all of the owner's pets.
+    def todays_schedule(self, *, owner: Owner, day: Optional[date] = None) -> List[dict]:
+        """Build today's schedule as a sorted list of lightweight dicts."""
 
-        Returns a list of items (dicts) including scheduled start time and
-        task metadata; exact schema is up to your implementation.
-        """
+        _ = day  # reserved for future date-aware rules (frequency, etc.)
+        items: List[dict] = []
+        for pet, task in owner.all_tasks():
+            if task.completed:
+                continue
+            items.append(
+                {
+                    "time": task.at,
+                    "pet_name": pet.name,
+                    "pet_id": pet.pet_id,
+                    "species": pet.species,
+                    "description": task.description,
+                    "frequency": task.frequency,
+                    "completed": task.completed,
+                }
+            )
 
-        raise NotImplementedError
+        items.sort(key=lambda x: (x["time"], x["pet_name"], x["description"]))
+        return items
 
-    def explain_plan(
-        self,
-        *,
-        owner: Owner,
-        plan: List[Dict[str, Any]],
-        day: date,
-    ) -> str:
-        """Produce a human-readable explanation for why the plan was chosen."""
+    def format_schedule(self, schedule: Iterable[dict]) -> str:
+        """Format a schedule into a readable multi-line string."""
 
-        raise NotImplementedError
+        lines: List[str] = []
+        for item in schedule:
+            t: time = item["time"]
+            lines.append(f"{t.strftime('%H:%M')}  {item['pet_name']}: {item['description']}")
+        return "\n".join(lines) if lines else "(no tasks scheduled)"
 
