@@ -49,3 +49,27 @@ def test_detect_conflicts_warns_for_same_time() -> None:
     assert len(schedule) == 2
     assert any("Conflict at 08:00" in warning for warning in warnings)
 
+
+def test_sorting_correctness_chronological() -> None:
+    today = date.today()
+    scheduler = Scheduler()
+
+    tasks = [
+        Task(description="B", at=time(9, 0), due_date=today),
+        Task(description="A", at=time(8, 30), due_date=today),
+        Task(description="C", at=time(9, 0), due_date=today),
+    ]
+
+    sorted_tasks = scheduler.sort_by_time(tasks)
+    assert [t.description for t in sorted_tasks] == ["A", "B", "C"]
+
+
+def test_no_tasks_returns_empty_schedule_and_no_warnings() -> None:
+    owner = Owner(owner_name="Jordan")
+    owner.add_pet(Pet(pet_id="p1", name="Mochi", species="dog"))
+    scheduler = Scheduler()
+    schedule, warnings = scheduler.build_schedule(owner=owner, day=date.today())
+
+    assert schedule == []
+    assert warnings == []
+

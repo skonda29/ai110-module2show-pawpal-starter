@@ -50,3 +50,15 @@ The scheduling layer now includes lightweight algorithms that make planning more
 - Filter tasks by pet name and completion status.
 - Handle recurring tasks by auto-creating the next daily/weekly instance when completed.
 - Detect exact-time conflicts and return warnings instead of crashing.
+
+## Testing PawPal+
+
+Run the test suite with:
+
+```bash
+python -m pytest
+```
+
+These tests verify key scheduling behaviors including sorting tasks chronologically, recurring task rollover (daily), and lightweight conflict detection when multiple tasks share the same time.
+
+Confidence Level: 4/5
