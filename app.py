@@ -98,11 +98,12 @@ if selected_pet and selected_pet.tasks:
         [
             {
                 "time": t.at.strftime("%H:%M"),
+                "due": t.due_date.isoformat(),
                 "description": t.description,
                 "frequency": t.frequency,
                 "completed": t.completed,
             }
-            for t in sorted(selected_pet.tasks, key=lambda x: (x.at, x.description))
+            for t in sorted(selected_pet.tasks, key=lambda x: (x.due_date, x.at, x.description))
         ]
     )
 elif selected_pet:
@@ -111,10 +112,85 @@ elif selected_pet:
 st.divider()
 
 st.subheader("Build Schedule")
-st.caption("This button calls your scheduling logic and displays the result.")
+st.caption("This button calls your scheduling logic and displays the result (sorted + conflict warnings).")
+
+today = date.today()
+
+pet_filter_name = None
+if owner.pets:
+    pet_filter_name = st.selectbox("Filter schedule by pet (optional)", ["(all)"] + [p.name for p in owner.pets])
+    if pet_filter_name == "(all)":
+        pet_filter_name = None
 
 if st.button("Generate schedule"):
     scheduler = Scheduler()
-    schedule = scheduler.todays_schedule(owner=owner, day=date.today())
+
+    # Build schedule items so we can optionally filter by pet and still show conflict warnings.
+    pairs = scheduler.filter_tasks(owner=owner, day=today, pet_name=pet_filter_name, completed=False)
+    schedule_items: list[dict] = []
+    for pet, task in pairs:
+        schedule_items.append(
+            {
+                "time": task.at,
+                "date": task.due_date,
+                "pet_name": pet.name,
+                "pet_id": pet.pet_id,
+                "species": pet.species,
+                "description": task.description,
+                "frequency": task.frequency,
+                "completed": task.completed,
+            }
+        )
+
+    schedule_items.sort(key=lambda x: (x["time"], x["pet_name"], x["description"]))
+    warnings = scheduler.detect_conflicts(schedule_items)
+
     st.markdown("#### Today's Schedule")
-    st.code(scheduler.format_schedule(schedule))
+    st.table(
+        [
+            {
+                "Time": item["time"].strftime("%H:%M"),
+                "Pet": item["pet_name"],
+                "Task": item["description"],
+                "Frequency": item["frequency"],
+                "Due": item["date"].isoformat(),
+            }
+            for item in schedule_items
+        ]
+    )
+
+    if warnings:
+        # Conflict warnings should be visually prominent and list all issues.
+        st.warning("Scheduling conflicts detected:")
+        for w in warnings:
+            st.write(f"- {w}")
+    else:
+        st.success("No scheduling conflicts detected.")
+
+st.divider()
+st.subheader("Complete a Task (demo)")
+st.caption("Marking a daily/weekly task complete will automatically create the next occurrence.")
+
+if selected_pet is None:
+    st.info("Add/select a pet above to enable task completion.")
+else:
+    todays_incomplete = [t for t in selected_pet.tasks if t.due_date == today and not t.completed]
+    todays_incomplete.sort(key=lambda t: (t.at, t.description))
+
+    if not todays_incomplete:
+        st.info("No incomplete tasks due today for this pet.")
+    else:
+        # Pick a single task to mark complete (simpler than a button per-row).
+        task_labels = [
+            f"{t.at.strftime('%H:%M')} - {t.description} ({t.frequency})" for t in todays_incomplete
+        ]
+        selected_task_label = st.selectbox("Task to mark complete", task_labels)
+        selected_task_index = task_labels.index(selected_task_label)
+        t = todays_incomplete[selected_task_index]
+
+        if st.button("Mark complete"):
+            did_complete = selected_pet.mark_task_complete(description=t.description, at=t.at, day=today)
+            if did_complete:
+                st.success(f"Marked complete: {t.description} ({t.at.strftime('%H:%M')}). Recurrence, if any, was rolled forward.")
+            else:
+                st.error("Could not find the selected task (it may have changed).")

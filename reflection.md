@@ -17,7 +17,7 @@
 **b. Design changes**
 
 - Did your design change during implementation?
-- If yes, describe at least one change and why you made it.
+- Yes. I expanded the initial `Task` concept to include `due_date` and `frequency`, and I changed `mark_complete()` to return a new recurring instance (so the next occurrence is created automatically). This kept recurrence logic in the backend model rather than duplicating it in the UI.
 
 ---
 
@@ -25,8 +25,8 @@
 
 **a. Constraints and priorities**
 
-- What constraints does your scheduler consider (for example: time, priority, preferences)?
-- How did you decide which constraints mattered most?
+- The scheduler currently uses `due_date` and `completed` status to decide which tasks are eligible for a given day, and it orders tasks by the `at` time. Preferences/priority are out of scope for this module iteration, so time + recurrence + status are the main “constraints” enforced.
+- I focused on the constraints that directly support the required user experience: consistent daily planning (filter by day), sensible ordering (sort by time), and usefulness for real routines (daily/weekly recurrence + conflicts).
 
 **b. Tradeoffs**
 
@@ -40,13 +40,13 @@
 
 **a. How you used AI**
 
-- How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
-- What kinds of prompts or questions were most helpful?
+- I used Copilot Chat to translate the UML into dataclass-based code stubs, brainstorm small scheduling algorithms (sorting/filtering/conflict detection), and iterate on tests by generating missing edge-case coverage once I saw what the current suite didn’t test.
+- The most helpful prompts were “keep it minimal” requests (so changes stayed understandable), plus targeted questions like how the Scheduler should retrieve tasks from `Owner` and how to structure recurrence rollover for daily/weekly tasks.
 
 **b. Judgment and verification**
 
-- Describe one moment where you did not accept an AI suggestion as-is.
-- How did you evaluate or verify what the AI suggested?
+- I did not accept suggestions that would have added complex “overlap duration” scheduling. Instead, I kept conflict detection lightweight (exact same start time) to preserve clarity and testability within this project’s scope.
+- I verified suggestions by running the CLI demo and then adding/adjusting `pytest` tests for the specific behavior (recurring rollover and conflict warnings), so changes were backed by green tests rather than assumptions.
 
 ---
 
@@ -54,13 +54,13 @@
 
 **a. What you tested**
 
-- What behaviors did you test?
-- Why were these tests important?
+- I tested the scheduler’s key behaviors and edge cases: sorting correctness, recurrence logic (daily completion creates next-day task), conflict detection for duplicate times, and the empty-state behavior when a pet has no tasks.
+- These tests are important because the scheduler is the “brain” of the app: the Streamlit UI is mostly wiring, but the scheduling logic can silently break unless its core rules are verified automatically.
 
 **b. Confidence**
 
-- How confident are you that your scheduler works correctly?
-- What edge cases would you test next if you had more time?
+- I’m confident for the current scope: the main algorithms (sorting/filtering/conflicts/recurrence rollover for daily) are covered and the test suite is passing.
+- With more time, I would add tests for weekly recurrence, tasks on multiple dates, and more advanced conflict detection (overlapping durations rather than exact matches).
 
 ---
 
@@ -68,12 +68,12 @@
 
 **a. What went well**
 
-- What part of this project are you most satisfied with?
+- I’m most satisfied with how reusable and consistent the backend logic became. The same `Scheduler` methods power both the CLI demo and the Streamlit UI, and recurrence behavior is handled by the models.
 
 **b. What you would improve**
 
-- If you had another iteration, what would you improve or redesign?
+- I would improve conflict detection to handle overlapping time ranges (based on durations) and expand the UI so the user can mark completion directly from the displayed schedule table instead of using a single selection demo.
 
 **c. Key takeaway**
 
-- What is one important thing you learned about designing systems or working with AI on this project?
+- My key takeaway is that AI is most effective when you treat it as a collaborator for drafts and options, but you keep ownership of system coherence through constraints and verification (tests + small incremental changes).

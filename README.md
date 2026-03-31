@@ -51,6 +51,13 @@ The scheduling layer now includes lightweight algorithms that make planning more
 - Handle recurring tasks by auto-creating the next daily/weekly instance when completed.
 - Detect exact-time conflicts and return warnings instead of crashing.
 
+## Features
+
+- Sorting tasks chronologically by scheduled time.
+- Filtering tasks by pet and completion status.
+- Handling recurring tasks (`daily`/`weekly`) by auto-creating the next instance when a task is completed.
+- Detecting exact-time conflicts and surfacing them as user-friendly warnings.
+
 ## Testing PawPal+
 
 Run the test suite with:
@@ -62,3 +69,7 @@ python -m pytest
 These tests verify key scheduling behaviors including sorting tasks chronologically, recurring task rollover (daily), and lightweight conflict detection when multiple tasks share the same time.
 
 Confidence Level: 4/5
+
+## 📸 Demo
+
+<a href="/course_images/ai110/pawpal_final_app.png" target="_blank"><img src='/course_images/ai110/pawpal_final_app.png' title='PawPal App' width='' alt='PawPal App' class='center-block' /></a>
